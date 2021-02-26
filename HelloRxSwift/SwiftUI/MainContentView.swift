@@ -11,6 +11,8 @@ struct MainContentView:View{
     
     @EnvironmentObject var theme : MyTheme
     
+    @StateObject var playlistProvider  = MyPlaylistListDataProvider()
+
     @StateObject var movieProvider = MyMovieListDataProvider()
     
     var dataSource = ["MainPageList"]
@@ -20,8 +22,12 @@ struct MainContentView:View{
     @State var selectKeeper = Set<String>()
     
     var playListButton:some View{
-        Image(systemName: "list.bullet")
-        
+        NavigationLink(
+                    destination: MyPlaylistCatalogView(playlistProvider: playlistProvider)
+                        .navigationTitle("Playlists")
+        ){
+            Image(systemName: "list.bullet")
+        }
     }
     var editButton:some View{
         Button(isEditing ? "Cancel" : "Select"){
@@ -59,23 +65,41 @@ struct MainContentView:View{
                         if (!movies.isEmpty) {
                             List(movies,selection:$selectKeeper,rowContent:renderMovie)
                                 .environment(\.editMode,.constant(isEditing ? EditMode.active : EditMode.inactive)).animation(Animation.spring())
-                            
+                            if(isEditing && !selectKeeper.isEmpty){
+                                NavigationLink(
+                                    destination:
+                                        MyAddToPlaylistView(
+                                            playlistProvider: playlistProvider,
+                                            movies: movies,
+                                            selectKeeper: $selectKeeper,
+                                            isEditing: $isEditing)
+                                        .navigationTitle("Add to playlist"),
+                                    label: {
+                                        MyTextButton(label : "Add to Playlist")
+                                    }
+                                    ).padding(.top, theme.paddingUnit)
+                            }
+                        }else {
+                            Text("No result found")
                         }
-                    }else {
-                        Text("No result found")
                     }
-                }
-            }
-//            List(dataSource,id:\.self){item  in
-////                ListRow(symbol: $0)
-////                Text("1111")
-//                MainPageCell(data: item)
-//            }
-            .navigationBarItems(leading: playListButton ,trailing: editButton)
+                }.frame(minWidth: 0,
+                        maxWidth: .infinity,
+                        minHeight: 0,
+                        maxHeight: .infinity,
+                        alignment: .topLeading
+                )
+                
+                if let error = movieProvider.error
+                                {
+                                    MyErrorView(error : error)
+                                }
+                
+            } .navigationBarItems(leading: playListButton, trailing: editButton)
+            .navigationBarTitle(Text("Movies"))
         }
+//        .phoneOnlyStackNavigationView()
     }
-    
-    
 }
 
 
